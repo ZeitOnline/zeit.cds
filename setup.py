@@ -16,7 +16,8 @@ setup(
     namespace_packages = ['zeit'],
     install_requires=[
         'gocept.filestore',
-        'ftputil'
+        'ftputil',
+        'pyftpdlib'
     ],
     entry_points = """
         [console_scripts]
