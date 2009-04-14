@@ -4,11 +4,21 @@
 # $Id$
 
 import ftputil
+import ftplib
 import gocept.filestore
+import os
 
 
-def export(store_dir, server, user, password, upload_dir):
-    host = ftputil.FTPHost(server, user, password)
+class FTPSession(ftplib.FTP):
+    def __init__(self, host, userid, password, port):
+        """Act like ftplib.FTP's constructor but connect to other port."""
+        ftplib.FTP.__init__(self)
+        self.connect(host, port)
+        self.login(userid, password)
+
+def export(store_dir, server, port, user, password, upload_dir):
+    host = ftputil.FTPHost(
+        server, user, password, port=port, session_factory=FTPSession)
 
     filestore = gocept.filestore.filestore.FileStore(store_dir)
     filestore.prepare()
@@ -29,3 +39,4 @@ def export(store_dir, server, user, password, upload_dir):
             filestore.move(item_name, 'new', 'cur')
     finally:
         host.remove(write_lock_path)
+        host.close()

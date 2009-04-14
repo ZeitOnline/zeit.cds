@@ -2,3 +2,62 @@
 Importing and Exporting items to an ftp server
 ==============================================
 
+Setup an ftp server:
+
+>>> from pyftpdlib import ftpserver
+>>> import threading
+>>> import tempfile
+>>> ftp_dir = tempfile.mkdtemp()
+
+>>> def dummy_logger(msg):
+...     pass
+
+>>> ftpserver.log = dummy_logger
+>>> ftpserver.logline = dummy_logger
+>>> authorizer = ftpserver.DummyAuthorizer()
+>>> authorizer.add_user('test', 'testpw', ftp_dir, perm='elradfmw')
+>>> ftp_handler = ftpserver.FTPHandler
+>>> ftp_handler.authorizer = authorizer
+>>> ftp_handler.banner = "Foooo"
+
+>>> address = ('', 2001)
+>>> ftpd = ftpserver.FTPServer(address, ftp_handler)
+
+The FTP server runs for one second. In this time, we will do all our tests:
+
+>>> def run_ftp_server():
+...     ftpd.serve_forever(timeout=0.001, count=100)
+>>> thread = threading.Thread(target=run_ftp_server)
+>>> thread.start()
+
+Create some files for the export:
+
+>>> store_dir = tempfile.mkdtemp()
+>>> from gocept.filestore import filestore
+>>> fs = filestore.FileStore(store_dir)
+>>> fs.prepare()
+>>> dummy = fs.create('a-file')
+>>> dummy = fs.create('b-file')
+>>> fs.move('a-file', 'tmp', 'new')
+>>> fs.move('b-file', 'tmp', 'new')
+
+Export:
+
+>>> import zeit.cds.main
+>>> zeit.cds.main.export(
+...     store_dir, 'localhost', 2001, 'test', 'testpw', '/')
+
+>>> import os
+>>> sorted(os.listdir(ftp_dir))
+['a-file', 'b-file']
+>>> os.listdir(os.path.join(store_dir, 'new'))
+[]
+>>> sorted(os.listdir(os.path.join(store_dir, 'cur')))
+['a-file', 'b-file']
+
+Clean up the temporary directories:
+
+>>> import shutil
+>>> shutil.rmtree(ftp_dir)
+>>> shutil.rmtree(store_dir)
+
