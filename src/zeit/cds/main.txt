@@ -115,7 +115,7 @@ This is the log of a successful export::
 
   >>> print logfile.getvalue()
   Connecting to CDS FTP server (host localhost, port 2001, user test, upload_dir /)
-  Accessed filestore /tmp/...
+  Accessed filestore ... 
   Creating lock file
   Lock file successfully created
   Uploaded file a-file
