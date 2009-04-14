@@ -29,6 +29,13 @@ We don't want the FTP server to create all kinds logging messages::
   >>> ftpserver.log = dummy_logger
   >>> ftpserver.logline = dummy_logger
 
+A bit dangerous because it might suppress real errors we want to see
+during debugging, but on the other hand we don't want the FTP server
+(in a separate thread) to spit out a traceback at a random moment
+during doctesting::
+
+  >> ftpserver.logerror = dummy_logger
+
 We create an authorizer letting our test user write to ``ftp_dir``::
 
   >>> authorizer = ftpserver.DummyAuthorizer()
@@ -36,10 +43,10 @@ We create an authorizer letting our test user write to ``ftp_dir``::
 
 We complete the configuration::
 
-  >>> ftp_handler = ftpserver.FTPHandler
-  >>> ftp_handler.authorizer = authorizer
+  >>> class MyFTPHandler(ftpserver.FTPHandler):
+  ...     authorizer = authorizer
   >>> address = ('', 2001)
-  >>> ftpd = ftpserver.FTPServer(address, ftp_handler)
+  >>> ftpd = ftpserver.FTPServer(address, MyFTPHandler)
 
 Normally we'd start the ftp server with ``serve_forever``, but in our
 tests we write a custom loop that we can actually shut down in the end
@@ -125,10 +132,10 @@ This is the log of a successful export::
   Connecting to CDS FTP server (host localhost, port 2001, user test, upload_dir /)
   Creating lock file
   Lock file successfully created
-  Uploaded file a-file
-  Moved file a-file from 'new' to 'cur'
-  Uploaded file b-file
-  Moved file b-file from 'new' to 'cur'
+  Uploading: a-file
+  Moved from 'new' to 'cur': a-file
+  Uploading: b-file
+  Moved from 'new' to 'cur': b-file
   Removing lock file
   Lock file successfully removed
   Disconnected from CDS FTP server
@@ -272,6 +279,15 @@ We need to wait a little bit here to make sure things cleanly shut down::
 
 Let's try to access the server while it is down
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Create another file to export::
+
+  >>> f = fs.create('another-file')
+  >>> f.write('something')
+  >>> f.close()
+  >>> fs.move('another-file', 'tmp', 'new')
+
+Try to export it (to a server that's down)::
 
   >>> zeit.cds.main.export(
   ...     store_dir, 'localhost', 2001, 'test', 'testpw', '/')

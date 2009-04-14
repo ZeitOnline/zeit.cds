@@ -56,14 +56,19 @@ def export(store_dir, hostname, port, user, password, upload_dir):
         for item in filestore.list('new'):
             item_name = os.path.basename(item)
             upload_path = os.path.join(upload_dir, item_name)
+            logging.info("Uploading: %s" % item_name)
             host.upload(item, upload_path, mode='b')
-            logging.info("Uploaded file %s" % item_name)
             filestore.move(item_name, 'new', 'cur')
-            logging.info("Moved file %s from 'new' to 'cur'" % item_name)
-    finally:
+            logging.info("Moved from 'new' to 'cur': %s" % item_name)
+    except ftputil.FTPError:
+        logging.exception("Error while uploading file %s to FTP server. "
+                          "Exiting." % item_name)
+        return
+    else:
         logging.info("Removing lock file")
         host.remove(write_lock_path)
         logging.info("Lock file successfully removed")
         host.close()
         logging.info("Disconnected from CDS FTP server")
 
+    
