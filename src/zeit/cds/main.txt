@@ -90,6 +90,16 @@ expects them::
   >>> fs.move('a-file', 'tmp', 'new')
   >>> fs.move('b-file', 'tmp', 'new')
 
+Before we start exporting, we make sure we can track log messages::
+
+  >>> import logging
+  >>> import StringIO
+  >>> logfile = StringIO.StringIO()
+  >>> log_handler = logging.StreamHandler(logfile)
+  >>> logging.root.addHandler(log_handler)
+  >>> old_log_level = logging.root.level
+  >>> logging.root.setLevel(logging.INFO)
+
 Now we finally have enough set up to run the export procedure::
    
   >>> import zeit.cds.main
@@ -101,7 +111,24 @@ spool to the FTP server we just started on localhost, port 2001. The
 user name to log in with is ``test`` and the password is
 ``testpw``. The directory we want to upload to is the FTP root.
 
-Let's verify whether our upload procedure succeeded. We expect ``a-file``
+This is the log of a successful export::
+
+  >>> print logfile.getvalue()
+  Connecting to CDS FTP server (host localhost, port 2001, user test, upload_dir /)
+  Accessed filestore /tmp/...
+  Creating lock file
+  Lock file successfully created
+  Uploaded file a-file
+  Moved file a-file from 'new' to 'cur'
+  Uploaded file b-file
+  Moved file b-file from 'new' to 'cur'
+  Removing lock file
+  Lock file successfully removed
+  Disconnected from CDS FTP server
+
+
+ 
+Verify whether our upload procedure succeeded. We expect ``a-file``
 and ``b-file`` to be in ``ftp_dir`` now:
 
   >>> import os
@@ -137,11 +164,16 @@ Finally we need to shut down the FTP server::
 We need to wait a little bit here to make sure things cleanly shut down::
 
   >>> import time
-  >>> time.sleep(1)
+  >>> time.sleep(2)
 
 Finally we can clean up the temporary directories::
 
   >>> import shutil
   >>> shutil.rmtree(ftp_dir)
   >>> shutil.rmtree(store_dir)
+
+We return the logging situation back to normal::
+
+  >>> logging.root.removeHandler(log_handler)
+  >>> logging.root.setLevel(old_log_level)
 
