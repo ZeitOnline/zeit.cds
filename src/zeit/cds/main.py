@@ -18,6 +18,13 @@ class FTPSession(ftplib.FTP):
         self.login(userid, password)
 
 def export(store_dir, server, port, user, password, upload_dir):
+    filestore = gocept.filestore.filestore.FileStore(store_dir)
+    filestore.prepare()
+    logging.info("Accessed filestore %s" % store_dir)
+    if not filestore.list('new'):
+        logging.info("No new files to export. Exiting.")
+        return
+
     logging.info(
         "Connecting to CDS FTP server "
         "(host %s, port %s, user %s, upload_dir %s)" %
@@ -25,9 +32,6 @@ def export(store_dir, server, port, user, password, upload_dir):
     host = ftputil.FTPHost(
         server, user, password, port=port, session_factory=FTPSession)
 
-    filestore = gocept.filestore.filestore.FileStore(store_dir)
-    filestore.prepare()
-    logging.info("Accessed filestore %s" % store_dir)
     
     write_lock_path = os.path.join(upload_dir, 'write')
     if host.path.exists(write_lock_path):

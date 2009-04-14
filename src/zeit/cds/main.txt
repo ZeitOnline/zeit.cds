@@ -114,8 +114,8 @@ user name to log in with is ``test`` and the password is
 This is the log of a successful export::
 
   >>> print logfile.getvalue()
-  Connecting to CDS FTP server (host localhost, port 2001, user test, upload_dir /)
   Accessed filestore ... 
+  Connecting to CDS FTP server (host localhost, port 2001, user test, upload_dir /)
   Creating lock file
   Lock file successfully created
   Uploaded file a-file
@@ -158,25 +158,54 @@ They have moved to the ``cur`` directory now::
   >>> sorted(os.listdir(os.path.join(store_dir, 'cur')))
   ['a-file', 'b-file']
 
-Write file already exists
-~~~~~~~~~~~~~~~~~~~~~~~~~
+Nothing in the spool to export
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If the write file exists and we try to export again, the export stops
-and will not occur. The idea is to retry the export at some later time
-(a regular cron job will do this automatically)::
+If there is nothing at all in the spool to export (that's the case
+now, as we just exported them), we won't even attempt to export::
+
+  >>> zeit.cds.main.export(
+  ...     store_dir, 'localhost', 2001, 'test', 'testpw', '/')
+  >>> print logfile.getvalue()
+  Accessed filestore ...
+  No new files to export. Exiting.
+  >>> logfile.seek(0)
+  >>> logfile.truncate()
+
+Lock file (``write``) already exists
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If the lock file (``write``) exists and we try to export, the export
+stops and will not occur. The idea is to retry the export at some
+later time (a regular cron job will do this automatically) when presumably
+the process that has generated the ``write`` file will have removed it.
+
+We first lock down the server::
 
   >>> f = open(os.path.join(ftp_dir, 'write'), mode='w')
   >>> f.write('Lock file')
   >>> f.close()
+
+We create something to export in the spool::
+
+  >>> f = fs.create('new-file')
+  >>> f.write('some new file')
+  >>> f.close()
+  >>> fs.move('new-file', 'tmp', 'new')
+
+Export::
+
   >>> zeit.cds.main.export(
   ...     store_dir, 'localhost', 2001, 'test', 'testpw', '/')
 
-The log file claims, that the lock file already exists::
+The log file will now report that the lock file already exists::
 
   >>> print logfile.getvalue()
-  Connecting to CDS FTP server (host localhost, port 2001, user test, upload_dir /)
   Accessed filestore ...
+  Connecting to CDS FTP server (host localhost, port 2001, user test, upload_dir /)
   Cannot write on CDS FTP server as 'write' lockfile exists. Exiting.
+  >>> logfile.seek(0)
+  >>> logfile.truncate()
 
 Remove the manually created lock file::
 
