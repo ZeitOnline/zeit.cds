@@ -100,6 +100,13 @@ Before we start exporting, we make sure we can track log messages::
   >>> old_log_level = logging.root.level
   >>> logging.root.setLevel(logging.INFO)
 
+A convenience function to display the log file::
+
+  >>> def dumplog():
+  ...    print logfile.getvalue()
+  ...    logfile.seek(0)
+  ...    logfile.truncate()
+
 Now we finally have enough set up to run the export procedure::
    
   >>> import zeit.cds.main
@@ -113,7 +120,7 @@ user name to log in with is ``test`` and the password is
 
 This is the log of a successful export::
 
-  >>> print logfile.getvalue()
+  >>> dumplog()
   Accessed filestore ... 
   Connecting to CDS FTP server (host localhost, port 2001, user test, upload_dir /)
   Creating lock file
@@ -125,9 +132,6 @@ This is the log of a successful export::
   Removing lock file
   Lock file successfully removed
   Disconnected from CDS FTP server
-
-  >>> logfile.seek(0)
-  >>> logfile.truncate()
 
 Verify whether our upload procedure succeeded. We expect ``a-file``
 and ``b-file`` to be in ``ftp_dir`` now:
@@ -166,11 +170,9 @@ now, as we just exported them), we won't even attempt to export::
 
   >>> zeit.cds.main.export(
   ...     store_dir, 'localhost', 2001, 'test', 'testpw', '/')
-  >>> print logfile.getvalue()
+  >>> dumplog()
   Accessed filestore ...
   No new files to export. Exiting.
-  >>> logfile.seek(0)
-  >>> logfile.truncate()
 
 Lock file (``write``) already exists
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -200,16 +202,61 @@ Export::
 
 The log file will now report that the lock file already exists::
 
-  >>> print logfile.getvalue()
+  >>> dumplog()
   Accessed filestore ...
   Connecting to CDS FTP server (host localhost, port 2001, user test, upload_dir /)
   Cannot write on CDS FTP server as 'write' lockfile exists. Exiting.
-  >>> logfile.seek(0)
-  >>> logfile.truncate()
 
 Remove the manually created lock file::
 
   >>> os.remove(os.path.join(ftp_dir, 'write'))
+
+Wrong hostname or port
+~~~~~~~~~~~~~~~~~~~~~~
+
+We try to FTP to a hostname/port combination where there is no FTP
+server at all::
+
+  >>> zeit.cds.main.export(
+  ...     store_dir, 'localhost', 2002, 'test', 'testpw', '/')
+  >>> dumplog()
+  Accessed filestore ...
+  Connecting to CDS FTP server (host localhost, port 2002, user test, upload_dir /)
+  Could not connect to CDS FTP server. Exiting
+  Traceback (most recent call last):
+    ...
+  FTPOSError: (111, 'Connection refused')
+  ...
+
+Wrong authentication
+~~~~~~~~~~~~~~~~~~~~
+
+We try to FTP but we put in the wrong user/password::
+
+  >>> zeit.cds.main.export(
+  ...     store_dir, 'localhost', 2001, 'test', 'secret', '/')
+  >>> dumplog()
+  Accessed filestore ...
+  Connecting to CDS FTP server (host localhost, port 2001, user test, upload_dir /)
+  Could not connect to CDS FTP server. Exiting
+  Traceback (most recent call last):
+    ...
+  PermanentError: 530 Authentication failed.
+  ...
+
+Nonexistent path on FTP server
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  >>> zeit.cds.main.export(
+  ...     store_dir, 'localhost', 2001, 'test', 'testpw', '/nonexistent')
+  >>> dumplog()
+  Accessed filestore ...
+  Connecting to CDS FTP server (host localhost, port 2001, user test, upload_dir /nonexistent)
+  Error accessing FTP server. Exiting
+  Traceback (most recent call last):
+    ...
+  PermanentError: 550 No such file or directory.
+  ...
 
 Cleanup
 ~~~~~~~

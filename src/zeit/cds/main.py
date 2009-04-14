@@ -17,7 +17,7 @@ class FTPSession(ftplib.FTP):
         self.connect(host, port)
         self.login(userid, password)
 
-def export(store_dir, server, port, user, password, upload_dir):
+def export(store_dir, hostname, port, user, password, upload_dir):
     filestore = gocept.filestore.filestore.FileStore(store_dir)
     filestore.prepare()
     logging.info("Accessed filestore %s" % store_dir)
@@ -28,23 +28,30 @@ def export(store_dir, server, port, user, password, upload_dir):
     logging.info(
         "Connecting to CDS FTP server "
         "(host %s, port %s, user %s, upload_dir %s)" %
-        (server, port, user, upload_dir))
-    host = ftputil.FTPHost(
-        server, user, password, port=port, session_factory=FTPSession)
-
-    
-    write_lock_path = os.path.join(upload_dir, 'write')
-    if host.path.exists(write_lock_path):
-        logging.info("Cannot write on CDS FTP server as 'write' lockfile "
-                     "exists. Exiting.")
+        (hostname, port, user, upload_dir))
+    try:
+        host = ftputil.FTPHost(
+            hostname, user, password, port=port, session_factory=FTPSession)
+    except ftputil.FTPError:
+        logging.exception("Could not connect to CDS FTP server. Exiting")
         return
 
-    logging.info("Creating lock file")
-    f = host.open(write_lock_path, mode='wb')
-    f.write('This is a lock file.')
-    f.close()
-    logging.info("Lock file successfully created")
-    
+    try:
+        write_lock_path = os.path.join(upload_dir, 'write')
+        if host.path.exists(write_lock_path):
+            logging.info("Cannot write on CDS FTP server as 'write' lockfile "
+                         "exists. Exiting.")
+            return
+
+        logging.info("Creating lock file")
+        f = host.open(write_lock_path, mode='wb')
+        f.write('This is a lock file.')
+        f.close()
+        logging.info("Lock file successfully created")
+    except ftputil.FTPError:
+        logging.exception("Error accessing FTP server. Exiting")
+        return
+ 
     try:
         for item in filestore.list('new'):
             item_name = os.path.basename(item)
