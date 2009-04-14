@@ -158,7 +158,12 @@ They have moved to the ``cur`` directory now::
   >>> sorted(os.listdir(os.path.join(store_dir, 'cur')))
   ['a-file', 'b-file']
 
-If the write file exists and we try to export again, the export stops::
+Write file already exists
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If the write file exists and we try to export again, the export stops
+and will not occur. The idea is to retry the export at some later time
+(a regular cron job will do this automatically)::
 
   >>> f = open(os.path.join(ftp_dir, 'write'), mode='w')
   >>> f.write('Lock file')
@@ -176,6 +181,9 @@ The log file claims, that the lock file already exists::
 Remove the manually created lock file::
 
   >>> os.remove(os.path.join(ftp_dir, 'write'))
+
+Cleanup
+~~~~~~~
 
 Finally we need to shut down the FTP server::
 
