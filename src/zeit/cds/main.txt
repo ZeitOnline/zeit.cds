@@ -258,10 +258,10 @@ Nonexistent path on FTP server
   PermanentError: 550 No such file or directory.
   ...
 
-Cleanup
-~~~~~~~
+Shut down
+~~~~~~~~~
 
-Finally we need to shut down the FTP server::
+Now we shut down the FTP server::
 
   >>> stop_serving = True
 
@@ -269,6 +269,23 @@ We need to wait a little bit here to make sure things cleanly shut down::
 
   >>> import time
   >>> time.sleep(2)
+
+Let's try to access the server while it is down
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  >>> zeit.cds.main.export(
+  ...     store_dir, 'localhost', 2001, 'test', 'testpw', '/')
+  >>> dumplog()
+  Accessed filestore ...
+  Connecting to CDS FTP server (host localhost, port 2001, user test, upload_dir /)
+  Could not connect to CDS FTP server. Exiting
+  Traceback (most recent call last):
+    ...
+  FTPOSError: (111, 'Connection refused')
+  ...
+
+Cleanup
+~~~~~~~
 
 Finally we can clean up the temporary directories::
 
