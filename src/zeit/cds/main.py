@@ -21,7 +21,7 @@ def export(store_dir, server, port, user, password, upload_dir):
     logging.info(
         "Connecting to CDS FTP server "
         "(host %s, port %s, user %s, upload_dir %s)" %
-        (server, port, user, upload_dir))                 
+        (server, port, user, upload_dir))
     host = ftputil.FTPHost(
         server, user, password, port=port, session_factory=FTPSession)
 

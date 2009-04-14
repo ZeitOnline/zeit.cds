@@ -126,8 +126,9 @@ This is the log of a successful export::
   Lock file successfully removed
   Disconnected from CDS FTP server
 
+  >>> logfile.seek(0)
+  >>> logfile.truncate()
 
- 
 Verify whether our upload procedure succeeded. We expect ``a-file``
 and ``b-file`` to be in ``ftp_dir`` now:
 
@@ -156,6 +157,25 @@ They have moved to the ``cur`` directory now::
 
   >>> sorted(os.listdir(os.path.join(store_dir, 'cur')))
   ['a-file', 'b-file']
+
+If the write file exists and we try to export again, the export stops::
+
+  >>> f = open(os.path.join(ftp_dir, 'write'), mode='w')
+  >>> f.write('Lock file')
+  >>> f.close()
+  >>> zeit.cds.main.export(
+  ...     store_dir, 'localhost', 2001, 'test', 'testpw', '/')
+
+The log file claims, that the lock file already exists::
+
+  >>> print logfile.getvalue()
+  Connecting to CDS FTP server (host localhost, port 2001, user test, upload_dir /)
+  Accessed filestore ...
+  Cannot write on CDS FTP server as 'write' lockfile exists. Exiting.
+
+Remove the manually created lock file::
+
+  >>> os.remove(os.path.join(ftp_dir, 'write'))
 
 Finally we need to shut down the FTP server::
 
