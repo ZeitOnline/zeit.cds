@@ -1,78 +1,147 @@
-==============================================
-Importing and Exporting items to an ftp server
-==============================================
+=======================================================
+Exporting and importing zeit.cms files to an FTP server
+=======================================================
 
-Setup an ftp server:
+Exporting
+---------
 
->>> from pyftpdlib import ftpserver
->>> import threading
->>> import tempfile
->>> ftp_dir = tempfile.mkdtemp()
+zeit.cms exports files to a ``gocept.filestore`` spool (in the ``new``
+subdirectory). The goal of ``gocept.cds.main.export`` is to export
+these files to an FTP server that implements the Content Drehscheibe
+(CDS) protocol. Those files that have been exported are moved to the
+``cur`` directory in the spool.
 
->>> def dummy_logger(msg):
-...     pass
+In order to test our export procedure, we set up an FTP server first.
 
->>> ftpserver.log = dummy_logger
->>> ftpserver.logline = dummy_logger
->>> authorizer = ftpserver.DummyAuthorizer()
->>> authorizer.add_user('test', 'testpw', ftp_dir, perm='elradfmw')
->>> ftp_handler = ftpserver.FTPHandler
->>> ftp_handler.authorizer = authorizer
->>> ftp_handler.banner = "Foooo"
+We create a temporary directory to hold the FTP files::
 
->>> address = ('', 2001)
->>> ftpd = ftpserver.FTPServer(address, ftp_handler)
+  >>> import tempfile
+  >>> ftp_dir = tempfile.mkdtemp()
 
-The FTP server runs for one second. In this time, we will do all our tests:
+We set up the FTP server next::
 
->>> import asyncore
->>> stop_serving = False
->>> def run_ftp_server():
-...     map = asyncore.socket_map
-...     ftpd._map = ftpd.handler._map = map
-...     while map or ftpserver._tasks:
-...         if map:
-...             asyncore.poll(1, map)
-...         if ftpserver._tasks:
-...             ftpserver._scheduler()
-...         if stop_serving:
-...             ftpd.close_all()
+  >>> from pyftpdlib import ftpserver
 
->>> thread = threading.Thread(target=run_ftp_server)
->>> thread.start()
+We don't want the FTP server to create all kinds logging messages::
 
-Create some files for the export:
+  >>> def dummy_logger(msg):
+  ...     pass
+  >>> ftpserver.log = dummy_logger
+  >>> ftpserver.logline = dummy_logger
 
->>> store_dir = tempfile.mkdtemp()
->>> from gocept.filestore import filestore
->>> fs = filestore.FileStore(store_dir)
->>> fs.prepare()
->>> dummy = fs.create('a-file')
->>> dummy = fs.create('b-file')
->>> fs.move('a-file', 'tmp', 'new')
->>> fs.move('b-file', 'tmp', 'new')
+We create an authorizer letting our test user write to ``ftp_dir``::
 
-Export:
+  >>> authorizer = ftpserver.DummyAuthorizer()
+  >>> authorizer.add_user('test', 'testpw', ftp_dir, perm='elradfmw')
 
->>> import zeit.cds.main
->>> zeit.cds.main.export(
-...     store_dir, 'localhost', 2001, 'test', 'testpw', '/')
+We complete the configuration::
 
->>> import os
->>> sorted(os.listdir(ftp_dir))
-['a-file', 'b-file']
->>> os.listdir(os.path.join(store_dir, 'new'))
-[]
->>> sorted(os.listdir(os.path.join(store_dir, 'cur')))
-['a-file', 'b-file']
+  >>> ftp_handler = ftpserver.FTPHandler
+  >>> ftp_handler.authorizer = authorizer
+  >>> address = ('', 2001)
+  >>> ftpd = ftpserver.FTPServer(address, ftp_handler)
 
->>> stop_serving = True
->>> import time
->>> time.sleep(1)
+Normally we'd start the ftp server with ``serve_forever``, but in our
+tests we write a custom loop that we can actually shut down in the end
+when we set ``stop_serving`` to ``True``. Ignore the following
+implementation - it's not important to understand the rest of the
+tests::
 
-Clean up the temporary directories:
+  >>> import asyncore
+  >>> stop_serving = False
+  >>> def run_ftp_server():
+  ...     map = asyncore.socket_map
+  ...     ftpd._map = ftpd.handler._map = map
+  ...     while map or ftpserver._tasks:
+  ...         if map:
+  ...             asyncore.poll(1, map)
+  ...         if ftpserver._tasks:
+  ...             ftpserver._scheduler()
+  ...         if stop_serving:
+  ...             ftpd.close_all()
 
->>> import shutil
->>> shutil.rmtree(ftp_dir)
->>> shutil.rmtree(store_dir)
+We now start the FTP server (in a separate thread, so the test can
+continue)::
+
+  >>> import threading
+  >>> thread = threading.Thread(target=run_ftp_server)
+  >>> thread.start()
+
+We now create the ``gocept.filestore`` spool we want to export, again
+in a temporary directory for testing purposes::
+
+  >>> store_dir = tempfile.mkdtemp()
+  >>> from gocept.filestore import filestore
+  >>> fs = filestore.FileStore(store_dir)
+  >>> fs.prepare()
+
+We put two files in it::
+
+  >>> a = fs.create('a-file')
+  >>> a.write('This is the A file')
+  >>> a.close()
+  >>> b = fs.create('b-file')
+  >>> b.write('This is the B file')
+  >>> b.close()
+
+We move those files to the ``new`` directory where our export logic
+expects them::
+
+  >>> fs.move('a-file', 'tmp', 'new')
+  >>> fs.move('b-file', 'tmp', 'new')
+
+Now we finally have enough set up to run the export procedure::
+   
+  >>> import zeit.cds.main
+  >>> zeit.cds.main.export(
+  ...     store_dir, 'localhost', 2001, 'test', 'testpw', '/')
+
+We say here we want to export the information in the ``store_dir``
+spool to the FTP server we just started on localhost, port 2001. The
+user name to log in with is ``test`` and the password is
+``testpw``. The directory we want to upload to is the FTP root.
+
+Let's verify whether our upload procedure succeeded. We expect ``a-file``
+and ``b-file`` to be in ``ftp_dir`` now:
+
+  >>> import os
+  >>> sorted(os.listdir(ftp_dir))
+  ['a-file', 'b-file']
+
+They also should have the right contents::
+
+  >>> a = open(os.path.join(ftp_dir, 'a-file'), 'r')
+  >>> a.read()
+  'This is the A file'
+  >>> a.close()
+  >>> b = open(os.path.join(ftp_dir, 'b-file'), 'r')
+  >>> b.read()
+  'This is the B file'
+  >>> b.close()
+
+The spool we uploaded from will not have the files in the ``new``
+directory anymore::
+
+  >>> os.listdir(os.path.join(store_dir, 'new'))
+  []
+
+They have moved to the ``cur`` directory now::
+
+  >>> sorted(os.listdir(os.path.join(store_dir, 'cur')))
+  ['a-file', 'b-file']
+
+Finally we need to shut down the FTP server::
+
+  >>> stop_serving = True
+
+We need to wait a little bit here to make sure things cleanly shut down::
+
+  >>> import time
+  >>> time.sleep(1)
+
+Finally we can clean up the temporary directories::
+
+  >>> import shutil
+  >>> shutil.rmtree(ftp_dir)
+  >>> shutil.rmtree(store_dir)
 
