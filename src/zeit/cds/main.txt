@@ -25,8 +25,19 @@ Setup an ftp server:
 
 The FTP server runs for one second. In this time, we will do all our tests:
 
+>>> import asyncore
+>>> stop_serving = False
 >>> def run_ftp_server():
-...     ftpd.serve_forever(timeout=0.001, count=100)
+...     map = asyncore.socket_map
+...     ftpd._map = ftpd.handler._map = map
+...     while map or ftpserver._tasks:
+...         if map:
+...             asyncore.poll(1, map)
+...         if ftpserver._tasks:
+...             ftpserver._scheduler()
+...         if stop_serving:
+...             ftpd.close_all()
+
 >>> thread = threading.Thread(target=run_ftp_server)
 >>> thread.start()
 
@@ -54,6 +65,10 @@ Export:
 []
 >>> sorted(os.listdir(os.path.join(store_dir, 'cur')))
 ['a-file', 'b-file']
+
+>>> stop_serving = True
+>>> import time
+>>> time.sleep(1)
 
 Clean up the temporary directories:
 
