@@ -14,6 +14,7 @@ these files to an FTP server that implements the Content Drehscheibe
 FTP server setup
 ----------------
 
+
 In order to test our export procedure, we set up an FTP server first
 that we can export to.
 
@@ -22,61 +23,10 @@ We create a temporary directory to hold the FTP files::
   >>> import tempfile
   >>> ftp_dir = tempfile.mkdtemp()
 
-We set up the FTP server next::
+Now we can start the server::
 
-  >>> from pyftpdlib import ftpserver
-
-We don't want the FTP server to create all kinds logging messages::
-
-  >>> def dummy_logger(msg):
-  ...     pass
-  >>> ftpserver.log = dummy_logger
-  >>> ftpserver.logline = dummy_logger
-
-A bit dangerous because it might suppress real errors we want to see
-during debugging, but on the other hand we don't want the FTP server
-(in a separate thread) to spit out a traceback at a random moment
-during doctesting::
-
-  >> ftpserver.logerror = dummy_logger
-
-We create an authorizer letting our test user write to ``ftp_dir``::
-
-  >>> authorizer = ftpserver.DummyAuthorizer()
-  >>> authorizer.add_user('test', 'testpw', ftp_dir, perm='elradfmw')
-
-We complete the configuration::
-
-  >>> class MyFTPHandler(ftpserver.FTPHandler):
-  ...     authorizer = authorizer
-  >>> address = ('', 2001)
-  >>> ftpd = ftpserver.FTPServer(address, MyFTPHandler)
-
-Normally we'd start the ftp server with ``serve_forever``, but in our
-tests we write a custom loop that we can actually shut down in the end
-when we set ``stop_serving`` to ``True``. Ignore the following
-implementation - it's not important to understand the rest of the
-tests::
-
-  >>> import asyncore
-  >>> stop_serving = False
-  >>> def run_ftp_server():
-  ...     map = asyncore.socket_map
-  ...     ftpd._map = ftpd.handler._map = map
-  ...     while map or ftpserver._tasks:
-  ...         if map:
-  ...             asyncore.poll(1, map)
-  ...         if ftpserver._tasks:
-  ...             ftpserver._scheduler()
-  ...         if stop_serving:
-  ...             ftpd.close_all()
-
-We now start the FTP server (in a separate thread, so the test can
-continue)::
-
-  >>> import threading
-  >>> thread = threading.Thread(target=run_ftp_server)
-  >>> thread.start()
+  >>> import zeit.cds.testing
+  >>> zeit.cds.testing.start_ftp_server(ftp_dir)
 
 A filestore to export from
 --------------------------
@@ -291,7 +241,7 @@ Shut down
 
 Now we shut down the FTP server::
 
-  >>> stop_serving = True
+  >>> zeit.cds.testing.stop_ftp_server()
 
 We need to wait a little bit here to make sure things cleanly shut down::
 
