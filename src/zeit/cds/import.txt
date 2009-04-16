@@ -135,6 +135,24 @@ import::
   Disconnected from CDS FTP server
   Exiting with success.
 
+Nonexistent path on FTP server
+------------------------------
+
+When the path doesn't exist on the FTP server we cannot import from it::
+
+  >>> zeit.cds.main.import_(
+  ...     store_dir, 'localhost', 2001, 'test', 'testpw', '/nonexistent')
+  >>> dumplog()
+  Starting import.
+  Accessed filestore ...
+  Connecting to CDS FTP server (host localhost, port 2001, user test, dir /nonexistent)
+  Error accessing FTP server.
+  Exiting with exception:
+  Traceback (most recent call last):
+    ...
+  PermanentError: 550 No such file or directory.
+  ...
+
 Shut down
 ---------
 
