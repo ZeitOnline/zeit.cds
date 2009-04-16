@@ -9,6 +9,7 @@ import gocept.filestore
 import os
 import logging
 
+log = logging.getLogger(__name__)
 
 class FTPSession(ftplib.FTP):
     def __init__(self, host, userid, password, port):
@@ -20,12 +21,12 @@ class FTPSession(ftplib.FTP):
 def export(store_dir, hostname, port, user, password, upload_dir):
     filestore = gocept.filestore.filestore.FileStore(store_dir)
     filestore.prepare()
-    logging.info("Accessed filestore %s" % store_dir)
+    log.info('Exporting files from Content-Drehscheibe at %s.' % store_dir)
     if not filestore.list('new'):
-        logging.info("No new files to export. Exiting.")
+        log.debug("No new files to export. Exiting.")
         return
 
-    logging.info(
+    log.debug(
         "Connecting to CDS FTP server "
         "(host %s, port %s, user %s, upload_dir %s)" %
         (hostname, port, user, upload_dir))
@@ -33,42 +34,40 @@ def export(store_dir, hostname, port, user, password, upload_dir):
         host = ftputil.FTPHost(
             hostname, user, password, port=port, session_factory=FTPSession)
     except ftputil.FTPError:
-        logging.exception("Could not connect to CDS FTP server. Exiting")
+        log.exception("Could not connect to CDS FTP server. Exiting")
         return
 
     try:
         write_lock_path = os.path.join(upload_dir, 'write')
         if host.path.exists(write_lock_path):
-            logging.info("Cannot write on CDS FTP server as 'write' lockfile "
+            log.debug("Cannot write on CDS FTP server as 'write' lockfile "
                          "exists. Exiting.")
             return
 
-        logging.info("Creating lock file")
+        log.debug("Creating lock file")
         f = host.open(write_lock_path, mode='wb')
         f.write('This is a lock file.')
         f.close()
-        logging.info("Lock file successfully created")
+        log.debug("Lock file successfully created")
     except ftputil.FTPError:
-        logging.exception("Error accessing FTP server. Exiting")
+        log.exception("Error accessing FTP server. Exiting")
         return
- 
+
     try:
         for item in filestore.list('new'):
             item_name = os.path.basename(item)
             upload_path = os.path.join(upload_dir, item_name)
-            logging.info("Uploading: %s" % item_name)
+            log.debug("Uploading: %s" % item_name)
             host.upload(item, upload_path, mode='b')
             filestore.move(item_name, 'new', 'cur')
-            logging.info("Moved from 'new' to 'cur': %s" % item_name)
+            log.debug("Moved from 'new' to 'cur': %s" % item_name)
     except ftputil.FTPError:
-        logging.exception("Error while uploading file %s to FTP server. "
+        log.exception("Error while uploading file %s to FTP server. "
                           "Exiting." % item_name)
         return
     else:
-        logging.info("Removing lock file")
+        log.debug("Removing lock file")
         host.remove(write_lock_path)
-        logging.info("Lock file successfully removed")
+        log.debug("Lock file successfully removed")
         host.close()
-        logging.info("Disconnected from CDS FTP server")
-
-    
+        log.info("Disconnected from CDS FTP server")

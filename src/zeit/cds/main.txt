@@ -105,7 +105,7 @@ Before we start exporting, we make sure we can track log messages::
   >>> log_handler = logging.StreamHandler(logfile)
   >>> logging.root.addHandler(log_handler)
   >>> old_log_level = logging.root.level
-  >>> logging.root.setLevel(logging.INFO)
+  >>> logging.root.setLevel(logging.DEBUG)
 
 A convenience function to display the log file::
 
@@ -128,7 +128,7 @@ user name to log in with is ``test`` and the password is
 This is the log of a successful export::
 
   >>> dumplog()
-  Accessed filestore ... 
+  Exporting files from Content-Drehscheibe at ... 
   Connecting to CDS FTP server (host localhost, port 2001, user test, upload_dir /)
   Creating lock file
   Lock file successfully created
@@ -178,7 +178,7 @@ now, as we just exported them), we won't even attempt to export::
   >>> zeit.cds.main.export(
   ...     store_dir, 'localhost', 2001, 'test', 'testpw', '/')
   >>> dumplog()
-  Accessed filestore ...
+  Exporting files from Content-Drehscheibe at ...
   No new files to export. Exiting.
 
 Lock file (``write``) already exists
@@ -210,7 +210,7 @@ Export::
 The log file will now report that the lock file already exists::
 
   >>> dumplog()
-  Accessed filestore ...
+  Exporting files from Content-Drehscheibe at ...
   Connecting to CDS FTP server (host localhost, port 2001, user test, upload_dir /)
   Cannot write on CDS FTP server as 'write' lockfile exists. Exiting.
 
@@ -227,7 +227,7 @@ server at all::
   >>> zeit.cds.main.export(
   ...     store_dir, 'localhost', 2002, 'test', 'testpw', '/')
   >>> dumplog()
-  Accessed filestore ...
+  Exporting files from Content-Drehscheibe at ...
   Connecting to CDS FTP server (host localhost, port 2002, user test, upload_dir /)
   Could not connect to CDS FTP server. Exiting
   Traceback (most recent call last):
@@ -243,7 +243,7 @@ We try to FTP but we put in the wrong user/password::
   >>> zeit.cds.main.export(
   ...     store_dir, 'localhost', 2001, 'test', 'secret', '/')
   >>> dumplog()
-  Accessed filestore ...
+  Exporting files from Content-Drehscheibe at ...
   Connecting to CDS FTP server (host localhost, port 2001, user test, upload_dir /)
   Could not connect to CDS FTP server. Exiting
   Traceback (most recent call last):
@@ -257,7 +257,7 @@ Nonexistent path on FTP server
   >>> zeit.cds.main.export(
   ...     store_dir, 'localhost', 2001, 'test', 'testpw', '/nonexistent')
   >>> dumplog()
-  Accessed filestore ...
+  Exporting files from Content-Drehscheibe at ...
   Connecting to CDS FTP server (host localhost, port 2001, user test, upload_dir /nonexistent)
   Error accessing FTP server. Exiting
   Traceback (most recent call last):
@@ -292,7 +292,7 @@ Try to export it (to a server that's down)::
   >>> zeit.cds.main.export(
   ...     store_dir, 'localhost', 2001, 'test', 'testpw', '/')
   >>> dumplog()
-  Accessed filestore ...
+  Exporting files from Content-Drehscheibe at ...
   Connecting to CDS FTP server (host localhost, port 2001, user test, upload_dir /)
   Could not connect to CDS FTP server. Exiting
   Traceback (most recent call last):
