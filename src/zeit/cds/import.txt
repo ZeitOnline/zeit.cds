@@ -91,6 +91,11 @@ The files should actually contain the data we expect::
   ...     print f.read()
   This is the file foo.
 
+Nothing is supposed to be left on the FTP server::
+
+  >>> os.listdir(ftp_dir)
+  []
+
 This is the log of a successful import::
  
   >>> dumplog()
@@ -100,9 +105,31 @@ This is the log of a successful import::
   Creating lock file: read
   Lock file successfully created: read
   Downloading: bar.xml
+  File removed on server: bar.xml
   Moved from 'tmp' to 'new': bar.xml
   Downloading: foo.xml
+  File removed on server: foo.xml
   Moved from 'tmp' to 'new': foo.xml
+  Removing lock file: read
+  Lock file successfully removed: read
+  Disconnected from CDS FTP server
+  Exiting with success.
+
+Nothing on the server to import
+-------------------------------
+
+If there is nothing at all on the server to import, we won't even attempt to
+import::
+
+  >>> zeit.cds.main.import_(
+  ...     store_dir, 'localhost', 2001, 'test', 'testpw', '/')
+  >>> dumplog()
+  Starting import.
+  Accessed filestore ...
+  Connecting to CDS FTP server (host localhost, port 2001, user test, dir /)
+  Creating lock file: read
+  Lock file successfully created: read
+  No new files to import.
   Removing lock file: read
   Lock file successfully removed: read
   Disconnected from CDS FTP server

@@ -50,14 +50,15 @@ def import_(store_dir, hostname, port, user, password, ftp_dir):
             for item in files:
                 log.info("Downloading: %s" % item)
                 dummy, path = tempfile.mkstemp(prefix='zeit.cds.')
+                item_path = os.path.join(ftp_dir, item)
                 try:
-                    host.download(os.path.join(ftp_dir, item),
-                                  path,
-                                  mode='b')
+                    host.download(item_path, path, mode='b')
                     with filestore.create(item) as f:
                         with open(path, 'rb') as g:
-                            f.write(g.read())                
+                            f.write(g.read())
                 finally:
+                    host.remove(item_path)
+                    log.info("File removed on server: %s" % item)
                     os.remove(path)
                 filestore.move(item, 'tmp', 'new')
                 log.info("Moved from 'tmp' to 'new': %s" % item)
