@@ -20,7 +20,7 @@ def export(store_dir, hostname, port, user, password, ftp_dir):
         log.info("Exiting with success.")
         return
 
-    try:
+    with handle_ftp_session_error():
         with ftp_session(hostname, port, user, password,
                          ftp_dir, 'write') as host:
             for item in filestore.list('new'):
@@ -30,14 +30,28 @@ def export(store_dir, hostname, port, user, password, ftp_dir):
                 host.upload(item, upload_path, mode='b')
                 filestore.move(item_name, 'new', 'cur')
                 log.info("Moved from 'new' to 'cur': %s" % item_name)
-    except FTPSessionError, e:
-        if e.exc_info == (None, None, None):
-            log.error("Exiting.")
-        else:
-            log.error("Exiting with exception:",
-                      exc_info=e.exc_info)
-        return    
-    log.info("Exiting with success.")
+
+def import_(store_dir, hostname, port, user, password, ftp_dir):
+    filestore = _get_filestore(store_dir)
+
+    with handle_ftp_session_error():
+        with ftp_session(hostname, port, user, password,
+                         ftp_dir, 'read') as host:
+            pass
+
+class handle_ftp_session_error(object):
+    def __enter__(self):
+        pass
+    
+    def __exit__(self, type, value, traceback):
+        if isinstance(value, FTPSessionError):
+            if value.exc_info == (None, None, None):
+                log.error("Exiting.")
+            else:
+                log.error("Exiting with exception:",
+                      exc_info=value.exc_info)
+            return True        
+        log.error("Exiting with success.")
     
 def _get_filestore(store_dir):
     filestore = gocept.filestore.filestore.FileStore(store_dir)
