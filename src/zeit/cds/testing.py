@@ -1,7 +1,9 @@
 from pyftpdlib import ftpserver
 import asyncore
 import threading
-                
+import logging
+import StringIO
+
 _stop_serving = False
 
 def start_ftp_server(dir, user='test', password='testpw',
@@ -54,3 +56,28 @@ def start_ftp_server(dir, user='test', password='testpw',
 def stop_ftp_server():
     global _stop_serving
     _stop_serving = True
+
+_logfile = None
+_log_handler = None
+_old_log_level = None
+
+def start_logging():
+    global _logfile
+    global _log_handler
+    global _old_log_level
+    
+    _logfile = StringIO.StringIO()
+    _log_handler = logging.StreamHandler(_logfile)
+    logging.root.addHandler(_log_handler)
+    _old_log_level = logging.root.level
+    logging.root.setLevel(logging.INFO)
+
+def dumplog():
+    print _logfile.getvalue()
+    _logfile.seek(0)
+    _logfile.truncate()
+
+def stop_logging():
+    logging.root.removeHandler(_log_handler)
+    logging.root.setLevel(_old_log_level)
+

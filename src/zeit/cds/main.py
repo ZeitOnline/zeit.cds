@@ -9,21 +9,23 @@ import ftplib
 import gocept.filestore
 import os, sys
 import logging
+import tempfile
 
 log = logging.getLogger(__name__)
 
 def export(store_dir, hostname, port, user, password, ftp_dir):
+    log.info("Starting export.")
+    
     filestore = _get_filestore(store_dir)
     
-    if not filestore.list('new'):
-        log.info("No new files to export.")
-        log.info("Exiting with success.")
-        return
-
     with handle_ftp_session_error():
+        if not filestore.list('new'):
+            log.info("No new files to export.")
+            return
+        
         with ftp_session(hostname, port, user, password,
                          ftp_dir, 'write') as host:
-            for item in filestore.list('new'):
+            for item in sorted(filestore.list('new')):
                 item_name = os.path.basename(item)
                 upload_path = os.path.join(ftp_dir, item_name)
                 log.info("Uploading: %s" % item_name)
@@ -32,12 +34,33 @@ def export(store_dir, hostname, port, user, password, ftp_dir):
                 log.info("Moved from 'new' to 'cur': %s" % item_name)
 
 def import_(store_dir, hostname, port, user, password, ftp_dir):
+    log.info("Starting import.")
+    
     filestore = _get_filestore(store_dir)
 
     with handle_ftp_session_error():
         with ftp_session(hostname, port, user, password,
                          ftp_dir, 'read') as host:
-            pass
+            files = sorted(host.listdir(ftp_dir))
+            # there is always going to be a file 'read' but we will ignore this
+            files.remove('read')
+            if not files:
+                log.info("No new files to import.")
+                return
+            for item in files:
+                log.info("Downloading: %s" % item)
+                dummy, path = tempfile.mkstemp(prefix='zeit.cds.')
+                try:
+                    host.download(os.path.join(ftp_dir, item),
+                                  path,
+                                  mode='b')
+                    with filestore.create(item) as f:
+                        with open(path, 'rb') as g:
+                            f.write(g.read())                
+                finally:
+                    os.remove(path)
+                filestore.move(item, 'tmp', 'new')
+                log.info("Moved from 'tmp' to 'new': %s" % item)
 
 class handle_ftp_session_error(object):
     def __enter__(self):
@@ -83,8 +106,8 @@ class ftp_session(object):
         
     def __enter__(self):
         log.info("Connecting to CDS FTP server "
-                 "(host %s, port %s, user %s)" %
-                 (self.hostname, self.port, self.user))
+                 "(host %s, port %s, user %s, dir %s)" %
+                 (self.hostname, self.port, self.user, self.ftp_dir))
 
         try:
             host = self.host = ftputil.FTPHost(

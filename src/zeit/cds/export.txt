@@ -14,7 +14,6 @@ these files to an FTP server that implements the Content Drehscheibe
 FTP server setup
 ----------------
 
-
 In order to test our export procedure, we set up an FTP server first
 that we can export to.
 
@@ -44,20 +43,11 @@ Tracking log messages
 
 Before we start exporting, we make sure we can track log messages::
 
-  >>> import logging
-  >>> import StringIO
-  >>> logfile = StringIO.StringIO()
-  >>> log_handler = logging.StreamHandler(logfile)
-  >>> logging.root.addHandler(log_handler)
-  >>> old_log_level = logging.root.level
-  >>> logging.root.setLevel(logging.INFO)
+  >>> zeit.cds.testing.start_logging()
 
 A convenience function to display the log file::
 
-  >>> def dumplog():
-  ...    print logfile.getvalue()
-  ...    logfile.seek(0)
-  ...    logfile.truncate()
+  >>> from zeit.cds.testing import dumplog
 
 Main export scenario
 --------------------
@@ -91,8 +81,9 @@ user name to log in with is ``test`` and the password is
 This is the log of a successful export::
 
   >>> dumplog()
+  Starting export.
   Accessed filestore ... 
-  Connecting to CDS FTP server (host localhost, port 2001, user test)
+  Connecting to CDS FTP server (host localhost, port 2001, user test, dir /)
   Creating lock file: write
   Lock file successfully created: write
   Uploading: a-file
@@ -142,6 +133,7 @@ now, as we just exported them), we won't even attempt to export::
   >>> zeit.cds.main.export(
   ...     store_dir, 'localhost', 2001, 'test', 'testpw', '/')
   >>> dumplog()
+  Starting export.
   Accessed filestore ...
   No new files to export.
   Exiting with success.
@@ -175,8 +167,9 @@ Export::
 The log file will now report that the lock file already exists::
 
   >>> dumplog()
+  Starting export.
   Accessed filestore ...
-  Connecting to CDS FTP server (host localhost, port 2001, user test)
+  Connecting to CDS FTP server (host localhost, port 2001, user test, dir /)
   Cannot access CDS FTP server as 'write' lockfile exists.
   Exiting.
 
@@ -193,8 +186,9 @@ server at all::
   >>> zeit.cds.main.export(
   ...     store_dir, 'localhost', 2002, 'test', 'testpw', '/')
   >>> dumplog()
+  Starting export.
   Accessed filestore ...
-  Connecting to CDS FTP server (host localhost, port 2002, user test)
+  Connecting to CDS FTP server (host localhost, port 2002, user test, dir /)
   Could not connect to CDS FTP server.
   Exiting with exception:
   Traceback (most recent call last):
@@ -210,8 +204,9 @@ We try to FTP but we put in the wrong user/password::
   >>> zeit.cds.main.export(
   ...     store_dir, 'localhost', 2001, 'test', 'secret', '/')
   >>> dumplog()
+  Starting export.
   Accessed filestore ...
-  Connecting to CDS FTP server (host localhost, port 2001, user test)
+  Connecting to CDS FTP server (host localhost, port 2001, user test, dir /)
   Could not connect to CDS FTP server.
   Exiting with exception:
   Traceback (most recent call last):
@@ -227,8 +222,9 @@ When the path doesn't exist on the FTP server we cannot export to it::
   >>> zeit.cds.main.export(
   ...     store_dir, 'localhost', 2001, 'test', 'testpw', '/nonexistent')
   >>> dumplog()
+  Starting export.
   Accessed filestore ...
-  Connecting to CDS FTP server (host localhost, port 2001, user test)
+  Connecting to CDS FTP server (host localhost, port 2001, user test, dir /nonexistent)
   Error accessing FTP server.
   Exiting with exception:
   Traceback (most recent call last):
@@ -263,8 +259,9 @@ Try to export it (to a server that's down)::
   >>> zeit.cds.main.export(
   ...     store_dir, 'localhost', 2001, 'test', 'testpw', '/')
   >>> dumplog()
+  Starting export.
   Accessed filestore ...
-  Connecting to CDS FTP server (host localhost, port 2001, user test)
+  Connecting to CDS FTP server (host localhost, port 2001, user test, dir /)
   Could not connect to CDS FTP server.
   Exiting with exception:
   Traceback (most recent call last):
@@ -283,6 +280,5 @@ Finally we can clean up the temporary directories::
 
 We return the logging situation back to normal::
 
-  >>> logging.root.removeHandler(log_handler)
-  >>> logging.root.setLevel(old_log_level)
+  >>> zeit.cds.testing.stop_logging()
 
