@@ -232,7 +232,7 @@ server at all::
   Could not connect to CDS FTP server. Exiting
   Traceback (most recent call last):
     ...
-  FTPOSError: (111, 'Connection refused')
+  FTPOSError: (..., 'Connection refused')
   ...
 
 Wrong authentication
@@ -297,7 +297,7 @@ Try to export it (to a server that's down)::
   Could not connect to CDS FTP server. Exiting
   Traceback (most recent call last):
     ...
-  FTPOSError: (111, 'Connection refused')
+  FTPOSError: (..., 'Connection refused')
   ...
 
 Cleanup
