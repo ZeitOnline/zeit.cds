@@ -1,9 +1,9 @@
-=======================================================
-Exporting and importing zeit.cms files to an FTP server
-=======================================================
+================================
+Exporting files to an FTP server
+================================
 
-Exporting
----------
+Introduction
+------------
 
 zeit.cms exports files to a ``gocept.filestore`` spool (in the ``new``
 subdirectory). The goal of ``gocept.cds.main.export`` is to export
@@ -11,7 +11,11 @@ these files to an FTP server that implements the Content Drehscheibe
 (CDS) protocol. Those files that have been exported are moved to the
 ``cur`` directory in the spool.
 
-In order to test our export procedure, we set up an FTP server first.
+FTP server setup
+----------------
+
+In order to test our export procedure, we set up an FTP server first
+that we can export to.
 
 We create a temporary directory to hold the FTP files::
 
@@ -74,6 +78,9 @@ continue)::
   >>> thread = threading.Thread(target=run_ftp_server)
   >>> thread.start()
 
+A filestore to export from
+--------------------------
+
 We now create the ``gocept.filestore`` spool we want to export, again
 in a temporary directory for testing purposes::
 
@@ -82,20 +89,8 @@ in a temporary directory for testing purposes::
   >>> fs = filestore.FileStore(store_dir)
   >>> fs.prepare()
 
-We put two files in it::
-
-  >>> a = fs.create('a-file')
-  >>> a.write('This is the A file')
-  >>> a.close()
-  >>> b = fs.create('b-file')
-  >>> b.write('This is the B file')
-  >>> b.close()
-
-We move those files to the ``new`` directory where our export logic
-expects them::
-
-  >>> fs.move('a-file', 'tmp', 'new')
-  >>> fs.move('b-file', 'tmp', 'new')
+Tracking log messages
+---------------------
 
 Before we start exporting, we make sure we can track log messages::
 
@@ -113,6 +108,24 @@ A convenience function to display the log file::
   ...    print logfile.getvalue()
   ...    logfile.seek(0)
   ...    logfile.truncate()
+
+Main export scenario
+--------------------
+
+We put two files in the filestore::
+
+  >>> a = fs.create('a-file')
+  >>> a.write('This is the A file')
+  >>> a.close()
+  >>> b = fs.create('b-file')
+  >>> b.write('This is the B file')
+  >>> b.close()
+
+We move those files to the ``new`` directory where our export logic
+expects them::
+
+  >>> fs.move('a-file', 'tmp', 'new')
+  >>> fs.move('b-file', 'tmp', 'new')
 
 Now we finally have enough set up to run the export procedure::
    
@@ -171,7 +184,7 @@ They have moved to the ``cur`` directory now::
   ['a-file', 'b-file']
 
 Nothing in the spool to export
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+------------------------------
 
 If there is nothing at all in the spool to export (that's the case
 now, as we just exported them), we won't even attempt to export::
@@ -184,7 +197,7 @@ now, as we just exported them), we won't even attempt to export::
   Exiting with success.
 
 Lock file (``write``) already exists
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+------------------------------------
 
 If the lock file (``write``) exists and we try to export, the export
 stops and will not occur. The idea is to retry the export at some
@@ -222,7 +235,7 @@ Remove the manually created lock file::
   >>> os.remove(os.path.join(ftp_dir, 'write'))
 
 Wrong hostname or port
-~~~~~~~~~~~~~~~~~~~~~~
+----------------------
 
 We try to FTP to a hostname/port combination where there is no FTP
 server at all::
@@ -240,7 +253,7 @@ server at all::
   ...
 
 Wrong authentication
-~~~~~~~~~~~~~~~~~~~~
+--------------------
 
 We try to FTP but we put in the wrong user/password::
 
@@ -257,7 +270,9 @@ We try to FTP but we put in the wrong user/password::
   ...
 
 Nonexistent path on FTP server
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+------------------------------
+
+When the path doesn't exist on the FTP server we cannot export to it::
 
   >>> zeit.cds.main.export(
   ...     store_dir, 'localhost', 2001, 'test', 'testpw', '/nonexistent')
@@ -272,7 +287,7 @@ Nonexistent path on FTP server
   ...
 
 Shut down
-~~~~~~~~~
+---------
 
 Now we shut down the FTP server::
 
@@ -283,8 +298,8 @@ We need to wait a little bit here to make sure things cleanly shut down::
   >>> import time
   >>> time.sleep(2)
 
-Let's try to access the server while it is down
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Accesssing the server while it is down
+--------------------------------------
 
 Create another file to export::
 
@@ -308,7 +323,7 @@ Try to export it (to a server that's down)::
   ...
 
 Cleanup
-~~~~~~~
+-------
 
 Finally we can clean up the temporary directories::
 
