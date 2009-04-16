@@ -23,6 +23,7 @@ setup(
     entry_points = """
         [console_scripts]
         cds-export = zeit.cds.main:export
+        cds-import = zeit.cds.main:import_
         """
 
 )
