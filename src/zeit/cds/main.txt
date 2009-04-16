@@ -129,16 +129,17 @@ This is the log of a successful export::
 
   >>> dumplog()
   Accessed filestore ... 
-  Connecting to CDS FTP server (host localhost, port 2001, user test, upload_dir /)
-  Creating lock file
-  Lock file successfully created
+  Connecting to CDS FTP server (host localhost, port 2001, user test)
+  Creating lock file: write
+  Lock file successfully created: write
   Uploading: a-file
   Moved from 'new' to 'cur': a-file
   Uploading: b-file
   Moved from 'new' to 'cur': b-file
-  Removing lock file
-  Lock file successfully removed
+  Removing lock file: write
+  Lock file successfully removed: write
   Disconnected from CDS FTP server
+  Exiting with success.
 
 Verify whether our upload procedure succeeded. We expect ``a-file``
 and ``b-file`` to be in ``ftp_dir`` now:
@@ -179,7 +180,8 @@ now, as we just exported them), we won't even attempt to export::
   ...     store_dir, 'localhost', 2001, 'test', 'testpw', '/')
   >>> dumplog()
   Accessed filestore ...
-  No new files to export. Exiting.
+  No new files to export.
+  Exiting with success.
 
 Lock file (``write``) already exists
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -211,8 +213,9 @@ The log file will now report that the lock file already exists::
 
   >>> dumplog()
   Accessed filestore ...
-  Connecting to CDS FTP server (host localhost, port 2001, user test, upload_dir /)
-  Cannot write on CDS FTP server as 'write' lockfile exists. Exiting.
+  Connecting to CDS FTP server (host localhost, port 2001, user test)
+  Cannot access CDS FTP server as 'write' lockfile exists.
+  Exiting.
 
 Remove the manually created lock file::
 
@@ -228,8 +231,9 @@ server at all::
   ...     store_dir, 'localhost', 2002, 'test', 'testpw', '/')
   >>> dumplog()
   Accessed filestore ...
-  Connecting to CDS FTP server (host localhost, port 2002, user test, upload_dir /)
-  Could not connect to CDS FTP server. Exiting
+  Connecting to CDS FTP server (host localhost, port 2002, user test)
+  Could not connect to CDS FTP server.
+  Exiting with exception:
   Traceback (most recent call last):
     ...
   FTPOSError: (..., 'Connection refused')
@@ -244,8 +248,9 @@ We try to FTP but we put in the wrong user/password::
   ...     store_dir, 'localhost', 2001, 'test', 'secret', '/')
   >>> dumplog()
   Accessed filestore ...
-  Connecting to CDS FTP server (host localhost, port 2001, user test, upload_dir /)
-  Could not connect to CDS FTP server. Exiting
+  Connecting to CDS FTP server (host localhost, port 2001, user test)
+  Could not connect to CDS FTP server.
+  Exiting with exception:
   Traceback (most recent call last):
     ...
   PermanentError: 530 Authentication failed.
@@ -258,8 +263,9 @@ Nonexistent path on FTP server
   ...     store_dir, 'localhost', 2001, 'test', 'testpw', '/nonexistent')
   >>> dumplog()
   Accessed filestore ...
-  Connecting to CDS FTP server (host localhost, port 2001, user test, upload_dir /nonexistent)
-  Error accessing FTP server. Exiting
+  Connecting to CDS FTP server (host localhost, port 2001, user test)
+  Error accessing FTP server.
+  Exiting with exception:
   Traceback (most recent call last):
     ...
   PermanentError: 550 No such file or directory.
@@ -293,8 +299,9 @@ Try to export it (to a server that's down)::
   ...     store_dir, 'localhost', 2001, 'test', 'testpw', '/')
   >>> dumplog()
   Accessed filestore ...
-  Connecting to CDS FTP server (host localhost, port 2001, user test, upload_dir /)
-  Could not connect to CDS FTP server. Exiting
+  Connecting to CDS FTP server (host localhost, port 2001, user test)
+  Could not connect to CDS FTP server.
+  Exiting with exception:
   Traceback (most recent call last):
     ...
   FTPOSError: (..., 'Connection refused')
