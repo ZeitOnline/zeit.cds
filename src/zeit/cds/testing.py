@@ -37,7 +37,7 @@ def start_ftp_server(dir, user='test', password='testpw',
     # down during doctests when we call stop_ftp_server()
     global _stop_serving
     _stop_serving = False
-    
+
     def run_ftp_server():
         map = asyncore.socket_map
         ftpd._map = ftpd.handler._map = map
@@ -65,7 +65,7 @@ def start_logging():
     global _logfile
     global _log_handler
     global _old_log_level
-    
+
     _logfile = StringIO.StringIO()
     _log_handler = logging.StreamHandler(_logfile)
     logging.root.addHandler(_log_handler)
