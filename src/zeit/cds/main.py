@@ -3,26 +3,41 @@
 # See also LICENSE.txt
 
 from __future__ import with_statement
-
-import ftputil
 import ftplib
+import ftputil
 import gocept.filestore
-import os, sys
 import logging
+import logging.handlers
+import os
+import sys
 import tempfile
+
 
 log = logging.getLogger(__name__)
 
-def export(store_dir, hostname, port, user, password, ftp_dir):
+
+def setup_logging(logfile):
+    if not logfile:
+        return
+    handler = logging.handlers.TimedRotatingFileHandler(
+                  logfile, when='D', interval=7, backupCount=5)
+    handler.setFormatter(logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
+    log.addHandler(handler)
+    log.setLevel(logging.INFO)
+
+
+def export(store_dir, hostname, port, user, password, ftp_dir, logfile=None):
+    setup_logging(logfile)
     log.info("Starting export.")
-    
+
     filestore = _get_filestore(store_dir)
-    
+
     with handle_ftp_session_error():
         if not filestore.list('new'):
             log.info("No new files to export.")
             return
-        
+
         with ftp_session(hostname, port, user, password,
                          ftp_dir, 'write') as host:
             for item in sorted(filestore.list('new')):
@@ -33,9 +48,11 @@ def export(store_dir, hostname, port, user, password, ftp_dir):
                 filestore.move(item_name, 'new', 'cur')
                 log.info("Moved from 'new' to 'cur': %s" % item_name)
 
-def import_(store_dir, hostname, port, user, password, ftp_dir):
+
+def import_(store_dir, hostname, port, user, password, ftp_dir, logfile=None):
+    setup_logging(logfile)
     log.info("Starting import.")
-    
+
     filestore = _get_filestore(store_dir)
 
     with handle_ftp_session_error():
@@ -63,10 +80,11 @@ def import_(store_dir, hostname, port, user, password, ftp_dir):
                 filestore.move(item, 'tmp', 'new')
                 log.info("Moved from 'tmp' to 'new': %s" % item)
 
+
 class handle_ftp_session_error(object):
     def __enter__(self):
         pass
-    
+
     def __exit__(self, type, value, traceback):
         if isinstance(value, FTPSessionError):
             if value.exc_info == (None, None, None):
@@ -74,14 +92,16 @@ class handle_ftp_session_error(object):
             else:
                 log.error("Exiting with exception:",
                       exc_info=value.exc_info)
-            return True        
+            return True
         log.error("Exiting with success.")
-    
+
+
 def _get_filestore(store_dir):
-    filestore = gocept.filestore.filestore.FileStore(store_dir)
+    filestore = gocept.filestore.FileStore(store_dir)
     filestore.prepare()
     log.info("Accessed filestore %s" % store_dir)
     return filestore
+
 
 class FTPSession(ftplib.FTP):
     def __init__(self, host, userid, password, port):
@@ -90,9 +110,11 @@ class FTPSession(ftplib.FTP):
         self.connect(host, port)
         self.login(userid, password)
 
+
 class FTPSessionError(Exception):
     def __init__(self, exc_info):
         self.exc_info = exc_info
+
 
 class ftp_session(object):
     def __init__(self, hostname, port, user, password, ftp_dir, lock_name):
@@ -104,7 +126,7 @@ class ftp_session(object):
         self.lock_name = lock_name
         self.lock_path = os.path.join(ftp_dir, lock_name)
         self.host = None
-        
+
     def __enter__(self):
         log.info("Connecting to CDS FTP server "
                  "(host %s, port %s, user %s, dir %s)" %
@@ -123,7 +145,7 @@ class ftp_session(object):
                 if host.path.exists(os.path.join(self.ftp_dir, name)):
                     log.info("Cannot access CDS FTP server as '%s' lockfile "
                              "exists." % name)
-                    raise FTPSessionError((None, None, None))    
+                    raise FTPSessionError((None, None, None))
             log.info("Creating lock file: %s" % self.lock_name)
             f = host.open(self.lock_path, mode='wb')
             f.write('This is a lock file.')
@@ -133,7 +155,7 @@ class ftp_session(object):
             log.error("Error accessing FTP server.")
             raise FTPSessionError(sys.exc_info())
         return host
-    
+
     def __exit__(self, type, value, traceback):
         if isinstance(value, ftputil.FTPError):
             log.error("Error accessing FTP server.")
@@ -147,5 +169,3 @@ class ftp_session(object):
         except ftputil.FTPError, e:
             log.error("Error accessing FTP server.")
             raise FTPSessionError(sys.exc_info())
-
-            
