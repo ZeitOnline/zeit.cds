@@ -17,126 +17,126 @@ FTP server setup
 In order to test our export procedure, we set up an FTP server first
 that we can export to.
 
-We create a temporary directory to hold the FTP files::
+We create a temporary directory to hold the FTP files:
 
-  >>> import tempfile
-  >>> ftp_dir = tempfile.mkdtemp()
+>>> import tempfile
+>>> ftp_dir = tempfile.mkdtemp()
 
-Now we can start the server::
+Now we can start the server:
 
-  >>> import zeit.cds.testing
-  >>> zeit.cds.testing.start_ftp_server(ftp_dir)
+>>> import zeit.cds.testing
+>>> zeit.cds.testing.start_ftp_server(ftp_dir)
 
 A filestore to export from
 --------------------------
 
 We now create the ``gocept.filestore`` spool we want to export, again
-in a temporary directory for testing purposes::
+in a temporary directory for testing purposes:
 
-  >>> store_dir = tempfile.mkdtemp()
-  >>> from gocept.filestore import filestore
-  >>> fs = filestore.FileStore(store_dir)
-  >>> fs.prepare()
+>>> store_dir = tempfile.mkdtemp()
+>>> from gocept.filestore import filestore
+>>> fs = filestore.FileStore(store_dir)
+>>> fs.prepare()
 
 Tracking log messages
 ---------------------
 
-Before we start exporting, we make sure we can track log messages::
+Before we start exporting, we make sure we can track log messages:
 
-  >>> zeit.cds.testing.start_logging()
+>>> zeit.cds.testing.start_logging()
 
-A convenience function to display the log file::
+A convenience function to display the log file:
 
-  >>> from zeit.cds.testing import dumplog
+>>> from zeit.cds.testing import dumplog
 
 Main export scenario
 --------------------
 
-We put two files in the filestore::
+We put two files in the filestore:
 
-  >>> a = fs.create('a-file')
-  >>> a.write('This is the A file')
-  >>> a.close()
-  >>> b = fs.create('b-file')
-  >>> b.write('This is the B file')
-  >>> b.close()
+>>> a = fs.create('a-file')
+>>> a.write('This is the A file')
+>>> a.close()
+>>> b = fs.create('b-file')
+>>> b.write('This is the B file')
+>>> b.close()
 
 We move those files to the ``new`` directory where our export logic
-expects them::
+expects them:
 
-  >>> fs.move('a-file', 'tmp', 'new')
-  >>> fs.move('b-file', 'tmp', 'new')
+>>> fs.move('a-file', 'tmp', 'new')
+>>> fs.move('b-file', 'tmp', 'new')
 
-Now we finally have enough set up to run the export procedure::
-   
-  >>> import zeit.cds.main
-  >>> zeit.cds.main.export(
-  ...     store_dir, 'localhost', 2001, 'test', 'testpw', '/')
+Now we finally have enough set up to run the export procedure:
+ 
+>>> import zeit.cds.main
+>>> zeit.cds.main.export(
+...     store_dir, 'localhost', 2001, 'test', 'testpw', '/')
 
 We say here we want to export the information in the ``store_dir``
 spool to the FTP server we just started on localhost, port 2001. The
 user name to log in with is ``test`` and the password is
 ``testpw``. The directory we want to upload to is the FTP root.
 
-This is the log of a successful export::
+This is the log of a successful export:
 
-  >>> dumplog()
-  Starting export.
-  Accessed filestore ... 
-  Connecting to CDS FTP server (host localhost, port 2001, user test, dir /)
-  Creating lock file: write
-  Lock file successfully created: write
-  Uploading: a-file
-  Moved from 'new' to 'cur': a-file
-  Uploading: b-file
-  Moved from 'new' to 'cur': b-file
-  Removing lock file: write
-  Lock file successfully removed: write
-  Disconnected from CDS FTP server
-  Exiting with success.
+>>> dumplog()
+Starting export.
+Accessed filestore ... 
+Connecting to CDS FTP server (host localhost, port 2001, user test, dir /)
+Creating lock file: write
+Lock file successfully created: write
+Uploading: a-file
+Moved from 'new' to 'cur': a-file
+Uploading: b-file
+Moved from 'new' to 'cur': b-file
+Removing lock file: write
+Lock file successfully removed: write
+Disconnected from CDS FTP server
+Exiting with success.
 
 Verify whether our upload procedure succeeded. We expect ``a-file``
 and ``b-file`` to be in ``ftp_dir`` now:
 
-  >>> import os
-  >>> sorted(os.listdir(ftp_dir))
-  ['a-file', 'b-file']
+>>> import os
+>>> sorted(os.listdir(ftp_dir))
+['a-file', 'b-file']
 
-They also should have the right contents::
+They also should have the right contents:
 
-  >>> a = open(os.path.join(ftp_dir, 'a-file'), 'r')
-  >>> a.read()
-  'This is the A file'
-  >>> a.close()
-  >>> b = open(os.path.join(ftp_dir, 'b-file'), 'r')
-  >>> b.read()
-  'This is the B file'
-  >>> b.close()
+>>> a = open(os.path.join(ftp_dir, 'a-file'), 'r')
+>>> a.read()
+'This is the A file'
+>>> a.close()
+>>> b = open(os.path.join(ftp_dir, 'b-file'), 'r')
+>>> b.read()
+'This is the B file'
+>>> b.close()
 
 The spool we uploaded from will not have the files in the ``new``
-directory anymore::
+directory anymore:
 
-  >>> os.listdir(os.path.join(store_dir, 'new'))
-  []
+>>> os.listdir(os.path.join(store_dir, 'new'))
+[]
 
-They have moved to the ``cur`` directory now::
+They have moved to the ``cur`` directory now:
 
-  >>> sorted(os.listdir(os.path.join(store_dir, 'cur')))
-  ['a-file', 'b-file']
+>>> sorted(os.listdir(os.path.join(store_dir, 'cur')))
+['a-file', 'b-file']
 
 Nothing in the spool to export
 ------------------------------
 
 If there is nothing at all in the spool to export (that's the case
-now, as we just exported them), we won't even attempt to export::
+now, as we just exported them), we won't even attempt to export:
 
-  >>> zeit.cds.main.export(
-  ...     store_dir, 'localhost', 2001, 'test', 'testpw', '/')
-  >>> dumplog()
-  Starting export.
-  Accessed filestore ...
-  No new files to export.
-  Exiting with success.
+>>> zeit.cds.main.export(
+...     store_dir, 'localhost', 2001, 'test', 'testpw', '/')
+>>> dumplog()
+Starting export.
+Accessed filestore ...
+No new files to export.
+Exiting with success.
 
 Lock file (``write``) already exists
 ------------------------------------
@@ -146,139 +146,139 @@ stops and will not occur. The idea is to retry the export at some
 later time (a regular cron job will do this automatically) when presumably
 the process that has generated the ``write`` file will have removed it.
 
-We first lock down the server::
+We first lock down the server:
 
-  >>> f = open(os.path.join(ftp_dir, 'write'), mode='w')
-  >>> f.write('Lock file')
-  >>> f.close()
+>>> f = open(os.path.join(ftp_dir, 'write'), mode='w')
+>>> f.write('Lock file')
+>>> f.close()
 
-We create something to export in the spool::
+We create something to export in the spool:
 
-  >>> f = fs.create('new-file')
-  >>> f.write('some new file')
-  >>> f.close()
-  >>> fs.move('new-file', 'tmp', 'new')
+>>> f = fs.create('new-file')
+>>> f.write('some new file')
+>>> f.close()
+>>> fs.move('new-file', 'tmp', 'new')
 
-Export::
+Export:
 
-  >>> zeit.cds.main.export(
-  ...     store_dir, 'localhost', 2001, 'test', 'testpw', '/')
+>>> zeit.cds.main.export(
+...     store_dir, 'localhost', 2001, 'test', 'testpw', '/')
 
-The log file will now report that the lock file already exists::
+The log file will now report that the lock file already exists:
 
-  >>> dumplog()
-  Starting export.
-  Accessed filestore ...
-  Connecting to CDS FTP server (host localhost, port 2001, user test, dir /)
-  Cannot access CDS FTP server as 'write' lockfile exists.
-  Exiting.
+>>> dumplog()
+Starting export.
+Accessed filestore ...
+Connecting to CDS FTP server (host localhost, port 2001, user test, dir /)
+Cannot access CDS FTP server as 'write' lockfile exists.
+Exiting.
 
-Remove the manually created lock file::
+Remove the manually created lock file:
 
-  >>> os.remove(os.path.join(ftp_dir, 'write'))
+>>> os.remove(os.path.join(ftp_dir, 'write'))
 
 Wrong hostname or port
 ----------------------
 
 We try to FTP to a hostname/port combination where there is no FTP
-server at all::
+server at all:
 
-  >>> zeit.cds.main.export(
-  ...     store_dir, 'localhost', 2002, 'test', 'testpw', '/')
-  >>> dumplog()
-  Starting export.
-  Accessed filestore ...
-  Connecting to CDS FTP server (host localhost, port 2002, user test, dir /)
-  Could not connect to CDS FTP server.
-  Exiting with exception:
-  Traceback (most recent call last):
-    ...
-  FTPOSError: (..., 'Connection refused')
+>>> zeit.cds.main.export(
+...     store_dir, 'localhost', 2002, 'test', 'testpw', '/')
+>>> dumplog()
+Starting export.
+Accessed filestore ...
+Connecting to CDS FTP server (host localhost, port 2002, user test, dir /)
+Could not connect to CDS FTP server.
+Exiting with exception:
+Traceback (most recent call last):
   ...
+FTPOSError: (..., 'Connection refused')
+...
 
 Wrong authentication
 --------------------
 
-We try to FTP but we put in the wrong user/password::
+We try to FTP but we put in the wrong user/password:
 
-  >>> zeit.cds.main.export(
-  ...     store_dir, 'localhost', 2001, 'test', 'secret', '/')
-  >>> dumplog()
-  Starting export.
-  Accessed filestore ...
-  Connecting to CDS FTP server (host localhost, port 2001, user test, dir /)
-  Could not connect to CDS FTP server.
-  Exiting with exception:
-  Traceback (most recent call last):
-    ...
-  PermanentError: 530 Authentication failed.
+>>> zeit.cds.main.export(
+...     store_dir, 'localhost', 2001, 'test', 'secret', '/')
+>>> dumplog()
+Starting export.
+Accessed filestore ...
+Connecting to CDS FTP server (host localhost, port 2001, user test, dir /)
+Could not connect to CDS FTP server.
+Exiting with exception:
+Traceback (most recent call last):
   ...
+PermanentError: 530 Authentication failed.
+...
 
 Nonexistent path on FTP server
 ------------------------------
 
-When the path doesn't exist on the FTP server we cannot export to it::
+When the path doesn't exist on the FTP server we cannot export to it:
 
-  >>> zeit.cds.main.export(
-  ...     store_dir, 'localhost', 2001, 'test', 'testpw', '/nonexistent')
-  >>> dumplog()
-  Starting export.
-  Accessed filestore ...
-  Connecting to CDS FTP server (host localhost, port 2001, user test, dir /nonexistent)
-  Error accessing FTP server.
-  Exiting with exception:
-  Traceback (most recent call last):
-    ...
-  PermanentError: 550 No such file or directory.
+>>> zeit.cds.main.export(
+...     store_dir, 'localhost', 2001, 'test', 'testpw', '/nonexistent')
+>>> dumplog()
+Starting export.
+Accessed filestore ...
+Connecting to CDS FTP server (host localhost, port 2001, user test, dir /nonexistent)
+Error accessing FTP server.
+Exiting with exception:
+Traceback (most recent call last):
   ...
+PermanentError: 550 No such file or directory.
+...
 
 Shut down
 ---------
 
-Now we shut down the FTP server::
+Now we shut down the FTP server:
 
-  >>> zeit.cds.testing.stop_ftp_server()
+>>> zeit.cds.testing.stop_ftp_server()
 
-We need to wait a little bit here to make sure things cleanly shut down::
+We need to wait a little bit here to make sure things cleanly shut down:
 
-  >>> import time
-  >>> time.sleep(2)
+>>> import time
+>>> time.sleep(2)
 
 Accesssing the server while it is down
 --------------------------------------
 
-Create another file to export::
+Create another file to export:
 
-  >>> f = fs.create('another-file')
-  >>> f.write('something')
-  >>> f.close()
-  >>> fs.move('another-file', 'tmp', 'new')
+>>> f = fs.create('another-file')
+>>> f.write('something')
+>>> f.close()
+>>> fs.move('another-file', 'tmp', 'new')
 
-Try to export it (to a server that's down)::
+Try to export it (to a server that's down):
 
-  >>> zeit.cds.main.export(
-  ...     store_dir, 'localhost', 2001, 'test', 'testpw', '/')
-  >>> dumplog()
-  Starting export.
-  Accessed filestore ...
-  Connecting to CDS FTP server (host localhost, port 2001, user test, dir /)
-  Could not connect to CDS FTP server.
-  Exiting with exception:
-  Traceback (most recent call last):
-    ...
-  FTPOSError: (..., 'Connection refused')
+>>> zeit.cds.main.export(
+...     store_dir, 'localhost', 2001, 'test', 'testpw', '/')
+>>> dumplog()
+Starting export.
+Accessed filestore ...
+Connecting to CDS FTP server (host localhost, port 2001, user test, dir /)
+Could not connect to CDS FTP server.
+Exiting with exception:
+Traceback (most recent call last):
   ...
+FTPOSError: (..., 'Connection refused')
+...
 
 Cleanup
 -------
 
-Finally we can clean up the temporary directories::
+Finally we can clean up the temporary directories:
 
-  >>> import shutil
-  >>> shutil.rmtree(ftp_dir)
-  >>> shutil.rmtree(store_dir)
+>>> import shutil
+>>> shutil.rmtree(ftp_dir)
+>>> shutil.rmtree(store_dir)
 
-We return the logging situation back to normal::
+We return the logging situation back to normal:
 
-  >>> zeit.cds.testing.stop_logging()
+>>> zeit.cds.testing.stop_logging()
 
