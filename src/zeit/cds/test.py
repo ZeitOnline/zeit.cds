@@ -2,12 +2,11 @@
 # See also LICENSE.txt
 
 import __future__
-
-import unittest
+import doctest
 import doctest
 import ftputil
+import unittest
 
-from zope.testing import doctest
 
 def setUp(test):
     # ftputil.FTPHost defines a __del__ that stops the
@@ -17,7 +16,8 @@ def setUp(test):
         del ftputil.FTPHost.__del__
     except AttributeError:
         pass
-    
+
+
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(doctest.DocFileSuite(
