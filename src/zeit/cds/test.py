@@ -24,5 +24,5 @@ def test_suite():
         'export.txt', 'import.txt',
         setUp=setUp,
         globs={'with_statement': __future__.with_statement},
-        optionflags=doctest.ELLIPSIS|doctest.NORMALIZE_WHITESPACE))
+        optionflags=doctest.ELLIPSIS | doctest.NORMALIZE_WHITESPACE))
     return suite

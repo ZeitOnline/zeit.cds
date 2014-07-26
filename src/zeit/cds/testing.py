@@ -6,6 +6,7 @@ import StringIO
 
 _stop_serving = False
 
+
 def start_ftp_server(dir, user='test', password='testpw',
                      host='', port=2001,
                      suppress_real_errors=True):
@@ -53,6 +54,7 @@ def start_ftp_server(dir, user='test', password='testpw',
     thread = threading.Thread(target=run_ftp_server)
     thread.start()
 
+
 def stop_ftp_server():
     global _stop_serving
     _stop_serving = True
@@ -60,6 +62,7 @@ def stop_ftp_server():
 _logfile = None
 _log_handler = None
 _old_log_level = None
+
 
 def start_logging():
     global _logfile
@@ -72,12 +75,13 @@ def start_logging():
     _old_log_level = logging.root.level
     logging.root.setLevel(logging.INFO)
 
+
 def dumplog():
     print _logfile.getvalue()
     _logfile.seek(0)
     _logfile.truncate()
 
+
 def stop_logging():
     logging.root.removeHandler(_log_handler)
     logging.root.setLevel(_old_log_level)
-

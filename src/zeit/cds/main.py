@@ -20,7 +20,7 @@ def setup_logging(logfile):
     if not logfile:
         return
     handler = logging.handlers.TimedRotatingFileHandler(
-                  logfile, when='D', interval=7, backupCount=5)
+        logfile, when='D', interval=7, backupCount=5)
     handler.setFormatter(logging.Formatter(
         "%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
     log.addHandler(handler)
@@ -90,8 +90,7 @@ class handle_ftp_session_error(object):
             if value.exc_info == (None, None, None):
                 log.error("Exiting.")
             else:
-                log.error("Exiting with exception:",
-                      exc_info=value.exc_info)
+                log.error("Exiting with exception:", exc_info=value.exc_info)
             return True
         log.error("Exiting with success.")
 

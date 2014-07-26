@@ -9,21 +9,21 @@ setup(
     description="""\
 """,
     packages=find_packages('src'),
-    package_dir = {'': 'src'},
-    include_package_data = True,
+    package_dir={'': 'src'},
+    include_package_data=True,
     zip_safe=False,
     license='gocept proprietary',
-    namespace_packages = ['zeit'],
+    namespace_packages=['zeit'],
     install_requires=[
         'setuptools',
         'gocept.filestore',
         'ftputil',
         'pyftpdlib'
     ],
-    entry_points = """
+    entry_points="""
         [console_scripts]
-        cds-export = zeit.cds.main:export
-        cds-import = zeit.cds.main:import_
+        cds-export=zeit.cds.main:export
+        cds-import=zeit.cds.main:import_
         """
 
 )
